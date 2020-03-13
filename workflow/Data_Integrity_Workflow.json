@@ -1,0 +1,87 @@
+{
+    "Version": "1.0.0.0",
+    "Definition": {
+        "StartAt": "LaunchDataIntegrityTask",
+        "States": {
+            "LaunchDataIntegrityTask": {
+                "Type": "LaunchTask",
+                "Name": "RunDataIntegrityPreCheck",
+                "StatusSummary": "Launch Data Integrity Docker Image",
+                "ResultPath": "$.Responses.RunDataIntegrityPreCheck",
+                "Connection": "OmniSeqConnection",
+                "WaitForCompletion": true,
+                "TaskRun": {
+                    "name": "RunDataIntegrityPreCheck",
+                    "description": "OmniSeq Run Folder Data Integrity Check Task",
+                    "execution": {
+                        "image": {
+                            "name": "{{docker-image}}", 
+                            "tag": "{{docker-tag}}"
+                        },
+                        "command": "bash",
+                        "args": [ 
+                            "-c",
+                            "echo \"start data integrity task\" && python /concordance/concordance.py --inputFolderPath /mount/inputs/input-folder/ --outputFolderPath /outputs/output-folder/ --manifest /mount/inputs/manifest.json && echo \"end data integrity task\""
+                        ],
+                        "inputs": [
+                            {
+                                "path": "/mount/inputs/input-folder",
+                                "url": "{{args.InputFolderPath}}",
+                                "type": "Folder",
+                                "mode": "Download"
+                            },
+                            {
+                                "path": "/mount/inputs/manifest.json",
+                                "url": "{{args.ManifestPath}}"
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "path": "/var/log/tessystemlogs",
+                                "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/System_Logs/Concordance/TES_Logs"
+                            },
+                            {
+                                "path": "/outputs/output-folder/",
+                                "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/Concordance"
+                            }
+                        ],
+                        "systemFiles": {
+                              "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/System_Logs/Concordance/TES_Logs"
+                        },
+                        "environment": {
+                            "resources": {
+                                "type": "standardHiCpu",
+                                "size": "large"
+                            }
+                        },
+                        "workingDirectory": "/outputs/output-folder"
+                    }
+                },
+                "Next": "EndWorkflow"
+            },
+            "EndWorkflow": {
+                "Type": "Succeed",
+                "Comment": "Data Integrity Check finished. Workflow complete.",
+                "End": true
+            }
+        },
+        "Arguments": [
+            {
+                "Name": "InputFolderPath"
+            },
+            {
+                "Name": "OutputFolderPath"
+            },
+            {
+                "Name": "ManifestPath"
+            }
+        ],
+        "Connections": [
+            {
+                "Name": "OmniSeqConnection",
+                "Type": "IlluminaJwt",
+                "Host": "https://{{host}}"
+            }
+        ]
+    }
+}

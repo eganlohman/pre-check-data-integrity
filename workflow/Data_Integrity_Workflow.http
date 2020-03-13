@@ -1,0 +1,206 @@
+###
+POST https://{{host}}/v1/workflows
+Authorization: Bearer {{jwt-token}}
+Content-Type: application/json
+
+{
+    "name": "OmniSeq_Data_Integrity_PreCheck_Workflow"
+}
+
+###
+POST https://{{host}}/v1/workflows/wfl.d95d0053150e47098b9431f91a1eb864/versions
+Authorization: Bearer {{jwt-token}}
+Content-Type: application/json
+
+{
+    "Version": "1.0.0.0",
+    "Definition": {
+        "StartAt": "LaunchDataIntegrityTask",
+        "States": {
+            "LaunchDataIntegrityTask": {
+                "Type": "LaunchTask",
+                "Name": "RunDataIntegrityPreCheck",
+                "StatusSummary": "Launch Data Integrity Docker Image",
+                "ResultPath": "$.Responses.RunDataIntegrityPreCheck",
+                "Connection": "OmniSeqConnection",
+                "WaitForCompletion": true,
+                "TaskRun": {
+                    "name": "RunDataIntegrityPreCheck",
+                    "description": "OmniSeq Run Folder Data Integrity Check Task",
+                    "execution": {
+                        "image": {
+                            "name": "{{docker-image}}", 
+                            "tag": "{{docker-tag}}"
+                        },
+                        "command": "bash",
+                        "args": [ 
+                            "-c",
+                            "echo \"start data integrity task\" && python /concordance/concordance.py --inputFolderPath /mount/inputs/input-folder/ --outputFolderPath /outputs/output-folder/ --manifest /mount/inputs/manifest.json && echo \"end data integrity task\""
+                        ],
+                        "inputs": [
+                            {
+                                "path": "/mount/inputs/input-folder",
+                                "url": "{{args.InputFolderPath}}",
+                                "type": "Folder",
+                                "mode": "Download"
+                            },
+                            {
+                                "path": "/mount/inputs/manifest.json",
+                                "url": "{{args.ManifestPath}}"
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "path": "/var/log/tessystemlogs",
+                                "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/System_Logs/Configuration/TES_Logs"
+                            },
+                            {
+                                "path": "/outputs/output-folder/",
+                                "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/Concordance"
+                            }
+                        ],
+                        "systemFiles": {
+                              "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/System_Logs/Configuration/TES_Logs"
+                        },
+                        "environment": {
+                            "resources": {
+                                "type": "standardHiCpu",
+                                "size": "large"
+                            }
+                        },
+                        "workingDirectory": "/outputs/output-folder"
+                    }
+                },
+                "Next": "EndWorkflow"
+            },
+            "EndWorkflow": {
+                "Type": "Succeed",
+                "Comment": "Data Integrity Check finished. Workflow complete.",
+                "End": true
+            }
+        },
+        "Arguments": [
+            {
+                "Name": "InputFolderPath"
+            },
+            {
+                "Name": "OutputFolderPath"
+            },
+            {
+                "Name": "ManifestPath"
+            }
+        ],
+        "Connections": [
+            {
+                "Name": "OmniSeqConnection",
+                "Type": "IlluminaJwt",
+                "Host": "https://{{host}}"
+            }
+        ]
+    }
+}
+
+### Update 1.0.0.0 version of workflow
+PATCH https://{{host}}/v1/workflows/wfl.d95d0053150e47098b9431f91a1eb864/versions/1.0.0.0
+Authorization: Bearer {{jwt-token}}
+Content-Type: application/json
+
+{
+    "Version": "1.0.0.0",
+    "Definition": {
+        "StartAt": "LaunchDataIntegrityTask",
+        "States": {
+            "LaunchDataIntegrityTask": {
+                "Type": "LaunchTask",
+                "Name": "RunDataIntegrityPreCheck",
+                "StatusSummary": "Launch Data Integrity Docker Image",
+                "ResultPath": "$.Responses.RunDataIntegrityPreCheck",
+                "Connection": "OmniSeqConnection",
+                "WaitForCompletion": true,
+                "TaskRun": {
+                    "name": "RunDataIntegrityPreCheck",
+                    "description": "OmniSeq Run Folder Data Integrity Check Task",
+                    "execution": {
+                        "image": {
+                            "name": "{{docker-image}}", 
+                            "tag": "{{docker-tag}}"
+                        },
+                        "command": "bash",
+                        "args": [ 
+                            "-c",
+                            "echo \"start data integrity task\" && python /concordance/concordance.py --inputFolderPath /mount/inputs/input-folder/ --outputFolderPath /outputs/output-folder/ --manifest /mount/inputs/manifest.json && echo \"end data integrity task\""
+                        ],
+                        "inputs": [
+                            {
+                                "path": "/mount/inputs/input-folder",
+                                "url": "{{args.InputFolderPath}}",
+                                "type": "Folder",
+                                "mode": "Download"
+                            },
+                            {
+                                "path": "/mount/inputs/manifest.json",
+                                "url": "{{args.ManifestPath}}"
+                            }
+                        ],
+                        "outputs": [
+                            {
+                                "path": "/var/log/tessystemlogs",
+                                "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/System_Logs/Concordance/TES_Logs"
+                            },
+                            {
+                                "path": "/outputs/output-folder/",
+                                "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/Concordance"
+                            }
+                        ],
+                        "systemFiles": {
+                              "url": "{{args.OutputFolderPath}}/{{Context.WorkflowRunId}}/System_Logs/Concordance/TES_Logs"
+                        },
+                        "environment": {
+                            "resources": {
+                                "type": "standardHiCpu",
+                                "size": "large"
+                            }
+                        },
+                        "workingDirectory": "/outputs/output-folder"
+                    }
+                },
+                "Next": "EndWorkflow"
+            },
+            "EndWorkflow": {
+                "Type": "Succeed",
+                "Comment": "Data Integrity Check finished. Workflow complete.",
+                "End": true
+            }
+        },
+        "Arguments": [
+            {
+                "Name": "InputFolderPath"
+            },
+            {
+                "Name": "OutputFolderPath"
+            },
+            {
+                "Name": "ManifestPath"
+            }
+        ],
+        "Connections": [
+            {
+                "Name": "OmniSeqConnection",
+                "Type": "IlluminaJwt",
+                "Host": "https://{{host}}"
+            }
+        ]
+    }
+}
+
+### get specific workflow run
+GET https://{{host}}/v1/workflows/runs/wfr.7cd363c5295543239e941a98df60957e  
+Authorization: Bearer {{jwt-token}}
+
+### get specific workflow run history
+GET https://{{host}}/v1/workflows/runs/wfr.7cd363c5295543239e941a98df60957e/history?pageSize=1000
+Authorization: Bearer {{jwt-token}}
+
+### get single task run
+GET https://{{host}}/v1/tasks/runs/trn.4a6192b6defa458b958413c13a66498b 
+Authorization: Bearer {{jwt-token}}
